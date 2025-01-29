@@ -37,16 +37,24 @@ bool planning::rbt::RGBTConnect::solve()
 				q_e = getRandomState(q_near);				
 				tie(status, q_new_list) = extendGenSpine2(q_near, q_e);
                 trees[tree_idx]->upgradeTree(q_new_list->front(), q_near);
+				std::vector<std::shared_ptr<base::State>> q_new_list_norm;
+				
+				for (size_t j = 0; j < q_new_list->size(); j++)	
+					q_new_list_norm.push_back(q_new_list->at(j));
+
                 for (size_t j = 1; j < q_new_list->size(); j++)
 				    trees[tree_idx]->upgradeTree(q_new_list->at(j), q_new_list->at(j-1));
 			}
             q_new = q_new_list->back();
+			// std::cout<<"44 "<<q_new<<std::endl;
 		}
 		else	// Distance-to-obstacles is less than d_crit
 		{
 			tie(status, q_new) = extend(q_near, q_e);
 			if (status != base::State::Status::Trapped)
 				trees[tree_idx]->upgradeTree(q_new, q_near);
+			// std::cout<<"51 "<<q_new<<std::endl;
+
 		}
 		
 		tree_idx = 1 - tree_idx; 	// Swapping trees
@@ -80,9 +88,9 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>>
     for (size_t i = 0; i < RGBTConnectConfig::NUM_LAYERS; i++)
     {
         tie(status, q_new) = extendSpine(q_new, q_e);
-        d_c = ss->computeDistanceUnderestimation(q_new, q->getNearestPoints());
-		// d_c = ss->computeDistance(q_new);	// If you want to use real distance
-        if (d_c < RBTConnectConfig::D_CRIT || status != base::State::Status::Advanced)
+        //d_c = ss->computeDistanceUnderestimation(q_new, q->getNearestPoints());
+		d_c = ss->computeDistance(q_new);	// If you want to use real distance
+        if (d_c < RBTConnectConfig::D_CRIT || status == base::State::Status::Reached)
             break;
     }
     return {status, q_new};
@@ -101,11 +109,11 @@ std::tuple<base::State::Status, std::shared_ptr<std::vector<std::shared_ptr<base
 
     for (size_t i = 0; i < RGBTConnectConfig::NUM_LAYERS; i++)
     {
-        q_temp = q_new;
+        q_temp = ss->getNewState(q_new);
         tie(status, q_new) = extendSpine(q_temp, q_e);
 		q_new_list.emplace_back(q_new);
-        d_c = ss->computeDistanceUnderestimation(q_new, q->getNearestPoints());
-		// d_c = ss->computeDistance(q_new);	// If you want to use real distance
+        //d_c = ss->computeDistanceUnderestimation(q_new, q->getNearestPoints());
+		 d_c = ss->computeDistance(q_new);	// If you want to use real distance
         if (d_c < RBTConnectConfig::D_CRIT || status == base::State::Status::Reached)
             break;
     }
@@ -124,7 +132,9 @@ base::State::Status planning::rbt::RGBTConnect::connectGenSpine
 	
 	while (status == base::State::Status::Advanced && num_ext++ < RRTConnectConfig::MAX_EXTENSION_STEPS)
 	{
-		q_temp = q_new;
+		// std::cout<<"130 "<<q_new<<std::endl;
+
+		q_temp = ss->getNewState(q_new);
 		if (d_c > RBTConnectConfig::D_CRIT)
 		{
 			tie(status, q_new_list) = extendGenSpine2(q_temp, q_e);

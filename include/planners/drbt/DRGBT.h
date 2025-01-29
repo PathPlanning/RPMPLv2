@@ -25,7 +25,7 @@ namespace planning::drbt
     public:
         DRGBT(const std::shared_ptr<base::StateSpace> ss_);
         DRGBT(const std::shared_ptr<base::StateSpace> ss_, 
-              const std::shared_ptr<base::State> q_start_, const std::shared_ptr<base::State> q_goal_);
+              const std::shared_ptr<base::State> q_start_, const std::shared_ptr<base::State> q_goal_, double low_bound_time_);
         ~DRGBT();                         
         
         bool solve() override;
@@ -65,6 +65,7 @@ namespace planning::drbt
         float max_edge_length;                                                  // Maximal edge length when acquiring a new predefined path
         bool all_robot_vel_same;                                                // Whether all joint velocities are the same
         std::shared_ptr<planning::drbt::Splines> splines;                       // Everything related to splines
+        double low_bound_time;                                                  // low bound of time, when goal is valid
     };
 }
 

@@ -97,7 +97,7 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> planning::rrt::RRT
 	std::shared_ptr<base::State> q_new { nullptr };
 	tie(status, q_new) = ss->interpolateEdge2(q, q_e, RRTConnectConfig::EPS_STEP);
 
-	if (ss->isValid(q, q_new) && !ss->robot->checkSelfCollision(q, q_new))
+	if (ss->isValid(q, q_new))// && !ss->robot->checkSelfCollision(q, q_new))
 		return {status, q_new};
 	else
 		return {base::State::Status::Trapped, q};
@@ -109,13 +109,12 @@ base::State::Status planning::rrt::RRTConnect::connect
 {
 	// std::cout << "Inside connect. \n";
 	std::shared_ptr<base::State> q_new { q };
-	std::shared_ptr<base::State> q_temp { nullptr };
 	base::State::Status status { base::State::Status::Advanced };
 	size_t num_ext { 0 };
 
 	while (status == base::State::Status::Advanced && num_ext++ < RRTConnectConfig::MAX_EXTENSION_STEPS)
 	{
-		q_temp = q_new;
+		std::shared_ptr<base::State> q_temp { ss->getNewState(q_new) };
 		tie(status, q_new) = extend(q_temp, q_e);
 		if (status != base::State::Status::Trapped)
 			tree->upgradeTree(q_new, q_temp);

@@ -8,7 +8,7 @@
 #include "RealVectorSpace.h"
 #include "RealVectorSpaceConfig.h"
 #include "xArm6.h"
-
+#include <cassert>
 namespace base
 {
 	class RealVectorSpaceFCL : public base::RealVectorSpace
@@ -20,7 +20,7 @@ namespace base
 		RealVectorSpaceFCL(size_t num_dimensions_, const std::shared_ptr<robots::AbstractRobot> robot_, 
 						   const std::shared_ptr<env::Environment> env_);
 		~RealVectorSpaceFCL();
-
+		bool check_robot_selfcollision(const std::shared_ptr<base::State> q1,std::shared_ptr<base::State> & q2){assert(false);return false;};
 		std::shared_ptr<fcl::BroadPhaseCollisionManagerf> getCollisionManagerRobot() const { return collision_manager_robot; }
 		std::shared_ptr<fcl::BroadPhaseCollisionManagerf> getCollisionManagerEnv() const { return collision_manager_env; }
 		

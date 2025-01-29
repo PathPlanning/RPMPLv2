@@ -31,6 +31,7 @@ namespace base
 		inline size_t getNumDimensions() { return num_dimensions; }
 		inline virtual base::StateSpaceType getStateSpaceType() const { return state_space_type; };
 		virtual std::shared_ptr<base::State> getRandomState(const std::shared_ptr<base::State> q_center = nullptr) = 0;
+		virtual std::shared_ptr<base::State> getNewState(const std::shared_ptr<base::State> q) = 0;
 		virtual std::shared_ptr<base::State> getNewState(const Eigen::VectorXf &coord) = 0;
 
 		virtual float getNorm(const std::shared_ptr<base::State> q1, const std::shared_ptr<base::State> q2) = 0;
@@ -52,6 +53,7 @@ namespace base
 		virtual float computeDistance(const std::shared_ptr<base::State> q, bool compute_again = false) = 0;
 		virtual float computeDistanceUnderestimation(const std::shared_ptr<base::State> q, 
 			const std::shared_ptr<std::vector<Eigen::MatrixXf>> nearest_points) = 0;
+		virtual bool check_robot_selfcollision(const std::shared_ptr<base::State> q1,std::shared_ptr<base::State> & q2)=0;
 	};
 }
 

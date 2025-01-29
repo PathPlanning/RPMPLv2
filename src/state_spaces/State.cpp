@@ -30,9 +30,9 @@ namespace base
 	std::ostream &operator<<(std::ostream &os, const std::shared_ptr<base::State> state)
 	{
 		if (state->getParent() == nullptr)
-			os << "q: (" << state->getCoord().transpose() << "); parent q: NONE";
+			os << "q: (" << state->getCoord().transpose() << "); parent q: NONE; time: " <<state->getTime();
 		else
-			os << "q: (" << state->getCoord().transpose() << "); parent q: (" << state->getParent()->getCoord().transpose() << ")";
+			os << "q: (" << state->getCoord().transpose() << "); parent q: (" << state->getParent()->getCoord().transpose() <<"); time: " <<state->getTime();
 		return os;
 	}
 }

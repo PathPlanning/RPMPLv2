@@ -227,5 +227,5 @@ void ConfigurationReader::initConfiguration(const std::string &root_path)
     else
         LOG(INFO) << "SplinesConfig::FINAL_VELOCITY_STEP is not defined! Using default value of " << SplinesConfig::FINAL_VELOCITY_STEP;
     
-    LOG(INFO) << "Configuration parameters read successfully!";
+    // LOG(INFO) << "Configuration parameters read successfully!";
 }

@@ -37,29 +37,29 @@ robots::xArm6::xArm6(const std::string &robot_desc, float gripper_length_, size_
 		link_frame.p = pos;
 		link_frame.M = link_frame.M.RPY(roll, pitch, yaw);
 		// LOG(INFO) << link_frame;
-		if (links_[i]->collision->geometry->type == urdf::Geometry::MESH)
-		{
-			fcl::Vector3f p[3];
-			fcl::BVHModel<fcl::OBBRSS<float>>* model { new fcl::BVHModel<fcl::OBBRSS<float>> };
-    		model->beginModel();
-			const auto mesh_ptr { dynamic_cast<const urdf::Mesh*>(links_[i]->collision->geometry.get()) };			
-			stl_reader::StlMesh <float, unsigned int> mesh (urdf_root_path + mesh_ptr->filename);
-			for (size_t j = 0; j < mesh.num_tris(); j++)
-			{
-				for (size_t icorner = 0; icorner < 3; icorner++) 
-				{
-					const float* c { mesh.vrt_coords (mesh.tri_corner_ind (j, icorner)) };
-					// LOG(INFO) << "(" << c[0] << ", " << c[1] << ", " << c[2] << ") ";
-					p[icorner] = fcl::Vector3f(c[0], c[1], c[2]); 
-				}
-				// LOG(INFO) << "+++++++++++++++++++++++++++++";
-				model->addTriangle(p[0], p[1], p[2]);
-			}
-			model->endModel();
-			CollisionGeometryPtr fcl_box(model);
-			links.emplace_back(new fcl::CollisionObject(fcl_box, fcl::Transform3f()));
-			init_poses.emplace_back(link_frame);
-		}
+		// if (links_[i]->collision->geometry->type == urdf::Geometry::MESH)
+		// {
+		// 	fcl::Vector3f p[3];
+		// 	fcl::BVHModel<fcl::OBBRSS<float>>* model { new fcl::BVHModel<fcl::OBBRSS<float>> };
+    	// 	model->beginModel();
+		// 	const auto mesh_ptr { dynamic_cast<const urdf::Mesh*>(links_[i]->collision->geometry.get()) };			
+		// 	stl_reader::StlMesh <float, unsigned int> mesh (urdf_root_path + mesh_ptr->filename);
+		// 	for (size_t j = 0; j < mesh.num_tris(); j++)
+		// 	{
+		// 		for (size_t icorner = 0; icorner < 3; icorner++) 
+		// 		{
+		// 			const float* c { mesh.vrt_coords (mesh.tri_corner_ind (j, icorner)) };
+		// 			// LOG(INFO) << "(" << c[0] << ", " << c[1] << ", " << c[2] << ") ";
+		// 			p[icorner] = fcl::Vector3f(c[0], c[1], c[2]); 
+		// 		}
+		// 		// LOG(INFO) << "+++++++++++++++++++++++++++++";
+		// 		model->addTriangle(p[0], p[1], p[2]);
+		// 	}
+		// 	model->endModel();
+		// 	CollisionGeometryPtr fcl_box(model);
+		// 	links.emplace_back(new fcl::CollisionObject(fcl_box, fcl::Transform3f()));
+		// 	init_poses.emplace_back(link_frame);
+		// }
 	}
 	
 	self_collision_checking = true;
@@ -71,7 +71,7 @@ robots::xArm6::xArm6(const std::string &robot_desc, float gripper_length_, size_
 
 	setState(std::make_shared<base::RealVectorSpaceState>(state));
 
-	LOG(INFO) << type << " robot created.";
+	// LOG(INFO) << type << " robot created.";
 	// LOG(INFO) << "Constructor end ----------------------\n";
 }
 
@@ -86,8 +86,8 @@ void robots::xArm6::setState(const std::shared_ptr<base::State> q)
 		// fcl::Transform3f tf_fcl = KDL2fcl(tf);
 		// LOG(INFO) << "fcl\n" << tf_fcl.translation().transpose() << "\t;\n" << tf_fcl.linear() << "\n..................................\n";
 		
-		links[i]->setTransform(KDL2fcl(tf));
-		links[i]->computeAABB(); 
+		// links[i]->setTransform(KDL2fcl(tf));
+		// links[i]->computeAABB(); 
 		// LOG(INFO) << links[i]->getAABB().min_ <<"\t;" << std::endl;
 		// LOG(INFO) << links[i]->getAABB().max_ << std::endl << "*******************" << std::endl;
 		// LOG(INFO) << (links[i]->getAABB().max_ - links[i]->getAABB().min_).transpose() <<"\t;" << std::endl;
@@ -227,8 +227,8 @@ std::shared_ptr<Eigen::MatrixXf> robots::xArm6::computeSkeleton(const std::share
 	skeleton->col(6) << frames->at(5).p.x(), frames->at(5).p.y(), frames->at(5).p.z();
 
     // Correct the last skeleton point regarding the attached gripper.
-	KDL::Vector a { frames->back().M.UnitZ() };
-	skeleton->col(6) -= 0.3 * gripper_length * Eigen::Vector3f(a.x(), a.y(), a.z());	// Line (*)
+	// KDL::Vector a { frames->back().M.UnitZ() };
+	// skeleton->col(6) -= 0.3 * gripper_length * Eigen::Vector3f(a.x(), a.y(), a.z());	// Line (*)
 	
 	q->setSkeleton(skeleton);
 	return skeleton;
@@ -283,11 +283,12 @@ std::shared_ptr<Eigen::MatrixXf> robots::xArm6::computeEnclosingRadii(const std:
 /// @note Because of joint limits, only first two links can collide with the last two links for xArm6 robot.
 bool robots::xArm6::checkSelfCollision(const std::shared_ptr<base::State> q1, std::shared_ptr<base::State> &q2)
 {
+	return false;
 	if (!self_collision_checking)
 		return false;
 	
 	// auto time_start { std::chrono::steady_clock::now() };
-	std::shared_ptr<base::State> q1_temp { q1 };
+	std::shared_ptr<base::State> q1_temp { std::make_shared<base::RealVectorSpaceState>(q1) };
 	size_t num_iter { 0 };
 	size_t max_num_iter { 5 };
 	float phi2 {}, phi4 {}, phi5 {}, phi6 {};
@@ -373,6 +374,7 @@ bool robots::xArm6::checkSelfCollision(const std::shared_ptr<base::State> q1, st
 /// @note Because of joint limits, only first two links can collide with the last two links for xArm6 robot.
 bool robots::xArm6::checkSelfCollision(const std::shared_ptr<base::State> q)
 {
+	return false;
 	if (!self_collision_checking)
 		return false;
 		
@@ -383,6 +385,7 @@ bool robots::xArm6::checkSelfCollision(const std::shared_ptr<base::State> q)
 /// @param skip_checking Determines whether collision checking between links: {0-5, 1-5, 0-4, 1-4} can be skipped.
 bool robots::xArm6::checkSelfCollision(const std::shared_ptr<base::State> q, std::vector<bool> &skip_checking)
 {
+	return false;
 	if (!skip_checking[0] && computeCapsulesDistance(q, 0, 5) < 0 && checkRealSelfCollision(q, 0, 5))
 	{
 		// std::cout << "Self-collision between link 0 and link 5 exists! \n";
@@ -425,6 +428,7 @@ float robots::xArm6::computeCapsulesDistance(const std::shared_ptr<base::State> 
 
 bool robots::xArm6::checkRealSelfCollision(const std::shared_ptr<base::State> q, size_t link1_idx, size_t link2_idx)
 {
+	return false;
 	// std::cout << "Checking real self-collision between link " << link1_idx << " and link " << link2_idx << "... \n";
 	setState(q);
 

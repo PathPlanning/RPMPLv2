@@ -6,13 +6,14 @@ planning::drbt::DRGBT::DRGBT(const std::shared_ptr<base::StateSpace> ss_) : RGBT
 }
 
 planning::drbt::DRGBT::DRGBT(const std::shared_ptr<base::StateSpace> ss_, const std::shared_ptr<base::State> q_start_,
-                             const std::shared_ptr<base::State> q_goal_) : RGBTConnect(ss_)
+                             const std::shared_ptr<base::State> q_goal_,double low_bound_time_ ) : RGBTConnect(ss_)
 {
 	// std::cout << "Initializing DRGBT planner... \n";
     planner_type = planning::PlannerType::DRGBT;
     q_start = q_start_;
     q_goal = q_goal_;
-	if (!ss->isValid(q_start) || ss->robot->checkSelfCollision(q_start))
+    low_bound_time = low_bound_time_;
+	if (!ss->isValid(q_start))// || ss->robot->checkSelfCollision(q_start))
 		throw std::domain_error("Start position is invalid!");
     
     q_current = q_start;
@@ -61,7 +62,7 @@ bool planning::drbt::DRGBT::solve()
     // Initial iteration: Obtaining an inital path using specified static planner
     // std::cout << "Iteration: " << planner_info->getNumIterations() << "\n";
     // std::cout << "Obtaining an inital path... \n";
-    replan(DRGBTConfig::MAX_ITER_TIME);
+    replan(60);
     planner_info->setNumIterations(planner_info->getNumIterations() + 1);
     planner_info->addIterationTime(getElapsedTime(time_iter_start));
     // std::cout << "----------------------------------------------------------------------------------------\n";
@@ -80,7 +81,7 @@ bool planning::drbt::DRGBT::solve()
         // std::cout << "d_c: " << q_current->getDistance() << " [m] \n";
         if (q_current->getDistance() <= 0)
         {
-            std::cout << "*************** Collision has been occurred!!! *************** \n";
+            // std::cout << "*************** Collision has been occurred!!! *************** \n";
             planner_info->setSuccessState(false);
             planner_info->setPlanningTime(planner_info->getIterationTimes().back());
             return false;
@@ -92,7 +93,10 @@ bool planning::drbt::DRGBT::solve()
             
         updateHorizon();                // ~ 10 [us]
         generateGBur();                 // ~ 10 [ms] Time consuming routine... 
-        computeNextState();             // ~ 1 [us]
+    //     std::cout << "Initial horizon consists of " << horizon.size() << " states: \n";
+    // for (size_t i = 0; i < horizon.size(); i++)
+    //     std::cout << i << ". state:\n" << horizon[i] << "\n";
+         computeNextState();             // ~ 1 [us]
         
         auto time_updateCurrentState { std::chrono::steady_clock::now() };
         switch (DRGBTConfig::TRAJECTORY_INTERPOLATION)
@@ -114,7 +118,7 @@ bool planning::drbt::DRGBT::solve()
         if (whetherToReplan())
         {
             // std::cout << "TASK 2: Replanning... \n";
-            replan(DRGBTConfig::MAX_ITER_TIME - getElapsedTime(time_iter_start));
+            replan(60);
             // std::cout << "Time elapsed: " << getElapsedTime(time_iter_start, planning::TimeUnit::ms) << " [ms] \n";
         }
         // else
@@ -131,7 +135,7 @@ bool planning::drbt::DRGBT::solve()
         // Update environment and check if the collision occurs
         if (!checkMotionValidity())
         {
-            std::cout << "*************** Collision has been occurred!!! *************** \n";
+            // std::cout << "*************** Collision has been occurred!!! *************** \n";
             planner_info->setSuccessState(false);
             planner_info->setPlanningTime(planner_info->getIterationTimes().back());
             return false;
@@ -457,13 +461,14 @@ void planning::drbt::DRGBT::computeReachedState(const std::shared_ptr<planning::
     q->setIsReached(status_ == base::State::Status::Reached ? true : false);
 
     // TODO: If there is enough remaining time, compute real distance-to-obstacles 
-    float d_c_underest { ss->computeDistanceUnderestimation(q_reached, q_current->getNearestPoints()) };
+    // float d_c = ss->computeDistanceUnderestimation(q_reached, q_target->getNearestPoints());
+    float d_c = ss->computeDistance(q_reached);
     if (q->getDistance() != -1)
         q->setDistancePrevious(q->getDistance());
     else
-        q->setDistancePrevious(d_c_underest);
+        q->setDistancePrevious(d_c);
     
-    q->setDistance(d_c_underest);
+    q->setDistance(d_c);
     
     // Check whether the goal is reached
     if (q->getIndex() != -1 && ss->isEqual(q_reached, q_goal))
@@ -574,10 +579,11 @@ void planning::drbt::DRGBT::computeNextState()
     }
 
     q_next_previous = q_next;
-    // std::cout << "Setting the robot next state to: " << q_next->getCoord().transpose() << "\n";
+    // std::cout << ss->env->getTime() <<std::endl;
+    // std::cout << "Setting the robot next state to: " << q_next->getCoord().transpose() <<std::endl;
     
     // std::cout << "Horizon consists of " << horizon.size() << " states: \n";
-    // for (size_t i = 0; i < horizon.size(); i++)
+    // for (size_t i = 0; i < 5; i++)
     //     std::cout << i << ". state:\n" << horizon[i] << "\n";
 }
 
@@ -599,7 +605,7 @@ bool planning::drbt::DRGBT::checkTerminatingCondition([[maybe_unused]] base::Sta
 
     if (ss->isEqual(q_current, q_goal))
     {
-        std::cout << "Goal configuration has been successfully reached! \n";
+        // std::cout << "Goal configuration has been successfully reached! \n";
 		planner_info->setSuccessState(true);
         planner_info->setPlanningTime(time_current);
         return true;
@@ -607,7 +613,7 @@ bool planning::drbt::DRGBT::checkTerminatingCondition([[maybe_unused]] base::Sta
 	
     if (time_current >= DRGBTConfig::MAX_PLANNING_TIME)
 	{
-        std::cout << "Maximal planning time has been reached! \n";
+        // std::cout << "Maximal planning time has been reached! \n";
 		planner_info->setSuccessState(false);
         planner_info->setPlanningTime(time_current);
 		return true;
@@ -615,7 +621,7 @@ bool planning::drbt::DRGBT::checkTerminatingCondition([[maybe_unused]] base::Sta
     
     if (planner_info->getNumIterations() >= DRGBTConfig::MAX_NUM_ITER)
 	{
-        std::cout << "Maximal number of iterations has been reached! \n";
+        // std::cout << "Maximal number of iterations has been reached! \n";
 		planner_info->setSuccessState(false);
         planner_info->setPlanningTime(time_current);
 		return true;

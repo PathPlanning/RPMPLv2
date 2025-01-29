@@ -36,7 +36,7 @@ namespace env
 		inline void setMaxVel(float max_vel_) { max_vel = max_vel_; }
 		inline void setMaxAcc(float max_acc_) { max_acc = max_acc_; }
 		inline void setMinDistTol(float min_dist_tol_) { min_dist_tol = min_dist_tol_; }
-
+		void setQuatRotation(const fcl::Quaternionf& q);
         friend std::ostream &operator<<(std::ostream &os, const std::shared_ptr<env::Object> obj);
 
 	protected:

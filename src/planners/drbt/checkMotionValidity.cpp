@@ -50,7 +50,8 @@ bool planning::drbt::DRGBT::checkMotionValidity(size_t num_checks)
             }
 
             path.emplace_back(q_temp);
-            is_valid = ss->isValid(q_temp) && !ss->robot->checkSelfCollision(q_temp);
+            q_temp->setTime(ss->env->getTime());
+            is_valid = ss->isValid(q_temp);// && !ss->robot->checkSelfCollision(q_temp);
             if (!is_valid || ss->isEqual(q_temp, q_goal))
                 break;
         }
@@ -66,8 +67,9 @@ bool planning::drbt::DRGBT::checkMotionValidity(size_t num_checks)
         {
             ss->env->updateEnvironment(delta_time);
             q_temp = ss->interpolateEdge(q_previous, q_current, dist * num_check / num_checks, dist);
+            q_temp->setTime(ss->env->getTime());
             path.emplace_back(q_temp);
-            is_valid = ss->isValid(q_temp) && !ss->robot->checkSelfCollision(q_temp);
+            is_valid = ss->isValid(q_temp);// && !ss->robot->checkSelfCollision(q_temp);
             if (!is_valid)
                 break;
         }

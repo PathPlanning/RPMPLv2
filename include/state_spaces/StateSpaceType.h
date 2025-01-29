@@ -15,6 +15,7 @@ namespace base
 		Abstract, // only here for placeholding
 		RealVectorSpace,
 		RealVectorSpaceFCL,
+		RealVectorSpaceHPPFCL,
 		SO2,
 		SO3
 	};

@@ -27,7 +27,7 @@ namespace robots
 		
 		inline const std::string &getType() const { return type; }
 		inline size_t getNumDOFs() const { return num_DOFs; }
-		inline size_t getNumLinks() const { return links.size(); }
+		inline size_t getNumLinks() const { return 4; } // TODO: REMOVE HARDCODE!!!! THIS IS QUICKFIX
 		inline const std::vector<std::unique_ptr<fcl::CollisionObjectf>> &getLinks() const { return links; }
 		inline const std::vector<std::pair<float, float>> &getLimits() const { return limits; }
 		inline std::shared_ptr<base::State> getConfiguration() const { return configuration; }

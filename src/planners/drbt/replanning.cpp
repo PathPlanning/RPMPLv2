@@ -26,7 +26,6 @@ std::unique_ptr<planning::AbstractPlanner> planning::drbt::DRGBT::initStaticPlan
 {
     // std::cout << "Static planner (for replanning): " << DRGBTConfig::STATIC_PLANNER_TYPE << "\n";
     std::shared_ptr<base::State> q_goal_ { ss->getNewState(q_goal->getCoord()) };
-    
     switch (DRGBTConfig::STATIC_PLANNER_TYPE)
     {
     case planning::PlannerType::RGBMTStar:
@@ -43,7 +42,7 @@ std::unique_ptr<planning::AbstractPlanner> planning::drbt::DRGBT::initStaticPlan
 
     case planning::PlannerType::RRTConnect:
         RRTConnectConfig::MAX_PLANNING_TIME = max_planning_time;
-        return std::make_unique<planning::rrt::RRTConnect>(ss, q_current, q_goal_);
+        return std::make_unique<planning::rrt::RRTConnect>(ss, q_current, q_goal);
 
     default:
         throw std::domain_error("The requested static planner is not found! ");
@@ -62,6 +61,10 @@ void planning::drbt::DRGBT::replan(float max_planning_time)
         if (max_planning_time <= 0)
             throw std::runtime_error("Not enough time for replanning! ");
 
+        if (ss->env->getTime()<low_bound_time){
+            throw std::runtime_error("Goal state time is not valid! skipping planning...");
+            
+        }
         switch (DRGBTConfig::REAL_TIME_SCHEDULING)
         {
         case planning::RealTimeScheduling::FPS:

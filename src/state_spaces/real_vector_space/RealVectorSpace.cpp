@@ -26,17 +26,23 @@ namespace base
 // If 'q_center' is passed, it is added to the random state 
 std::shared_ptr<base::State> base::RealVectorSpace::getRandomState(const std::shared_ptr<base::State> q_center)
 {
-	Eigen::VectorXf q_rand_coord { Eigen::VectorXf::Random(num_dimensions) };
+	Eigen::VectorXf q_rand { Eigen::VectorXf::Random(num_dimensions) };
 	std::vector<std::pair<float, float>> limits { robot->getLimits() };
 
 	for (size_t i = 0; i < num_dimensions; i++)
-		q_rand_coord(i) = ((limits[i].second - limits[i].first) * q_rand_coord(i) + limits[i].first + limits[i].second) / 2;
+		q_rand(i) = ((limits[i].second - limits[i].first) * q_rand(i) + limits[i].first + limits[i].second) / 2;
 
 	if (q_center != nullptr)
-		q_rand_coord += q_center->getCoord();
+		q_rand += q_center->getCoord();
 
-	// std::cout << "Random state coord: " << q_rand_coord.transpose();
-	return getNewState(q_rand_coord);
+	// std::cout << "Random state coord: " << q_rand.transpose();
+	return getNewState(q_rand);
+}
+
+// Get a copy of 'state'
+std::shared_ptr<base::State> base::RealVectorSpace::getNewState(const std::shared_ptr<base::State> state)
+{
+	return std::make_shared<base::RealVectorSpaceState>(state);
 }
 
 // Get completely a new state with the same coordinates as 'state'
@@ -106,7 +112,7 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> base::RealVectorSp
 	}
 	else
 	{
-		q_new = getNewState(q2->getCoord());
+		q_new = getNewState(q2);
 		status = base::State::Status::Reached;
 	}
 
@@ -294,13 +300,14 @@ bool base::RealVectorSpace::isValid(const std::shared_ptr<base::State> q)
 				fcl::AABB AABB { env->getCollObject(j)->getAABB() };
 				Eigen::VectorXf obs(6);
 				obs << AABB.min_[0], AABB.min_[1], AABB.min_[2], AABB.max_[0], AABB.max_[1], AABB.max_[2];
-				if (collisionCapsuleToBox(skeleton->col(i), skeleton->col(i+1), robot->getCapsuleRadius(i), obs))
+				// if (collisionCapsuleToBox(skeleton->col(i), skeleton->col(i+1), robot->getCapsuleRadius(i), obs))
+				if (collisionCapsuleToBox(skeleton->col(i), skeleton->col(i+1), 0.005, obs))
 					return false;
             }
 			else if (env->getCollObject(j)->getNodeType() == fcl::NODE_TYPE::GEOM_SPHERE)
 			{
 				Eigen::VectorXf obs(4); 	// TODO
-                if (collisionCapsuleToSphere(skeleton->col(i), skeleton->col(i+1), robot->getCapsuleRadius(i), obs))
+                if (collisionCapsuleToSphere(skeleton->col(i), skeleton->col(i+1),  0.05, obs))
 					return false;
             }
         }

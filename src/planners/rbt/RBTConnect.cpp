@@ -88,7 +88,7 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> planning::rbt::RBT
 	if (q->getDistance() < 0) 	// Just in case. Regularly, 'q' should have a distance!
 		ss->computeDistance(q);
 	
-	std::vector<float> rho_profile(ss->robot->getNumLinks(), 0);	// The path length in W-space for each robot's link
+	std::vector<float> rho_profile(ss->robot->getNumDOFs(), 0);	// The path length in W-space for each robot's link
 	float rho { 0 }, rho_k { 0 }, rho_k_prev { 0 }; 				// The path length in W-space for (complete) robot
 	float step { 0 };
 	size_t counter { 0 };
@@ -109,8 +109,13 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> planning::rbt::RBT
 		if (RBTConnectConfig::USE_EXPANDED_BUBBLE)
 		{
 			step = INFINITY;
-			for (size_t i = 0; i < ss->num_dimensions; i++)
-				step = std::min(step, (q->getDistanceProfile(i) - rho_profile[i]) / R->col(i+1).dot(delta_q));
+			for (size_t i = 0; i < ss->num_dimensions; i++){
+				float  wqw = q->getDistanceProfile(i);
+				Eigen::VectorXf zzz = R->col(i+1);
+				delta_q[0]=0;
+				auto total = zzz.dot(delta_q);
+				step = std::min(step, (wqw - rho_profile[i]) / total);
+			}
 		}
 		else
 			step = (q->getDistance() - rho) / R->col(ss->num_dimensions).dot(delta_q);	// 'q->getDistance() - rho' is the remaining path length in W-space
@@ -123,7 +128,7 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> planning::rbt::RBT
 		else
 			q_new = ss->getNewState(q_temp->getCoord() + step * (q_e->getCoord() - q_temp->getCoord()));
 
-		self_collision = ss->robot->checkSelfCollision(q_temp, q_new);
+		self_collision = ss->check_robot_selfcollision(q_temp, q_new);
 		if (self_collision)
 			status = !ss->isEqual(q_temp, q_new) ? base::State::Status::Advanced : base::State::Status::Trapped;
 		
@@ -132,10 +137,10 @@ std::tuple<base::State::Status, std::shared_ptr<base::State>> planning::rbt::RBT
 
 		// -------------------------------------------------------- //
 		skeleton_new = ss->robot->computeSkeleton(q_new);
-		rho_profile = std::vector<float>(ss->robot->getNumLinks(), 0);
+		rho_profile = std::vector<float>(ss->robot->getNumDOFs(), 0);
 		rho_k_prev = 0;
 		
-		for (size_t k = 1; k <= ss->robot->getNumLinks(); k++)
+		for (size_t k = 1; k <= ss->robot->getNumDOFs(); k++)
 		{
 			rho_k = (skeleton->col(k) - skeleton_new->col(k)).norm();
 			rho_profile[k-1] = std::max(rho_k_prev, rho_k);
@@ -157,7 +162,7 @@ base::State::Status planning::rbt::RBTConnect::connectSpine
 
 	while (status == base::State::Status::Advanced && num_ext++ < RRTConnectConfig::MAX_EXTENSION_STEPS)
 	{
-		q_temp = q_new;
+		q_temp = ss->getNewState(q_new);
 		if (d_c > RBTConnectConfig::D_CRIT)
 		{
 			tie(status, q_new) = extendSpine(q_temp, q_e);

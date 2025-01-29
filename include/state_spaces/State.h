@@ -35,6 +35,7 @@ namespace base
 		std::shared_ptr<std::vector<KDL::Frame>> frames;				// All frames of the robot
 		std::shared_ptr<Eigen::MatrixXf> skeleton;						// Skeleton points of the robot
 		std::shared_ptr<Eigen::MatrixXf> enclosing_radii; 				// Matrix containing all enclosing radii (row: from which skeleton point, column: to which skeleton point)
+		float moment_in_time =0;                                           //moment in time of state
 		
 	public:
 		State() {}
@@ -52,6 +53,7 @@ namespace base
 		inline float getDistanceProfile(size_t idx) { return d_c_profile[idx]; }
 		inline bool getIsRealDistance() const { return is_real_d_c; }
 		inline float getCost() const { return cost; }
+		inline float getTime() const {return moment_in_time;}
 		inline std::shared_ptr<std::vector<Eigen::MatrixXf>> getNearestPoints() const { return nearest_points; }
 		inline std::shared_ptr<State> getParent() const { return parent; }
 		inline std::shared_ptr<std::vector<std::shared_ptr<State>>> getChildren() const { return children; }
@@ -75,7 +77,7 @@ namespace base
 		inline void setFrames(const std::shared_ptr<std::vector<KDL::Frame>> frames_) { frames = frames_; }
 		inline void setSkeleton(const std::shared_ptr<Eigen::MatrixXf> skeleton_) { skeleton = skeleton_; }
 		inline void setEnclosingRadii(const std::shared_ptr<Eigen::MatrixXf> enclosing_radii_) { enclosing_radii = enclosing_radii_; }
-
+		inline void setTime(const float _time){moment_in_time = _time;}
 		void addChild(const std::shared_ptr<State> child);
 		friend std::ostream &operator<<(std::ostream &os, const std::shared_ptr<base::State> state);
 	};
